@@ -1,5 +1,5 @@
 from typing import Annotated, Union
-from fastapi import FastAPI, Query, Path, Body, Response
+from fastapi import FastAPI, Query, Path, Body, Response, HTTPException, Depends, Cookie, Request
 from pydantic import Required
 from fastapi.responses import JSONResponse, RedirectResponse
 
@@ -101,4 +101,38 @@ async def getRickRolled(q: Annotated[bool | None, Query()] = False) -> Response:
         return RedirectResponse(url="https://www.youtube.com/watch?v=dQw4w9WgXcQ")
     return JSONResponse(content={"message": "Nah."})
 
+# -- HANDLING ERRORS --
+
+items = {"foo": "The Foo Wrestlers"}
+@app.get("/get-items-error/{item_id}")
+async def read_item(item_id: str):
+    if item_id not in items:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return {"item": items[item_id]}
+
+
+# -- DEPENDENCIES with cookies --
+def query_extractor(q: str | None = None):
+    return q
+
+def cookie_extractor(
+    q: Annotated[str, Depends(query_extractor)],
+    response: Response,
+    request: Request
+):
+    response.set_cookie(key="last_query", value=q)
+    last_query = request.cookies.get("last_query")
+    return last_query
+
+def query_or_cookie_extractor(
+    q: Annotated[str, Depends(query_extractor)],
+    last_query: Annotated[str, Depends(cookie_extractor)]
+):
+    if not q:
+        return last_query
+    return q
+
+@app.get("/items-cookie/")
+async def read_query(query_or_default: Annotated[str, Depends(query_or_cookie_extractor)]):
+    return {"q_or_cookie": query_or_default}
 
