@@ -18,4 +18,4 @@ engine = create_engine(MYSQL_DATABASE_URL)
 
 sessionLocal = sessionmaker(autocommit=False, bind=engine)
 
-base = declarative_base()
+Base = declarative_base()
