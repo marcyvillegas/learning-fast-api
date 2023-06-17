@@ -1,0 +1,26 @@
+CRUD Endpoints for book review app
+
+>> Models
+> user
+    - id (PK)
+    - firstName
+    - lastName
+    - email
+    - password
+    - posts[]
+> post
+    - id (PK)
+    - userId (FK)
+    - content
+
+>> Endpoints
+> user
+    - signup
+    - login
+    - logout
+> post
+    - get_posts
+    - get_postId
+    - create_post
+    - edit_post
+    - delete_post
