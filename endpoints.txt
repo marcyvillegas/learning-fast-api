@@ -7,7 +7,7 @@ CRUD Endpoints for book review app
     - lastName
     - email
     - password
-    - posts[]
+    - posts[] <- array of posts of the user
 > post
     - id (PK)
     - userId (FK)
