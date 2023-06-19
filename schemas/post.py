@@ -1,7 +1,9 @@
+from typing import Optional
+
 from pydantic import BaseModel
-class Post(BaseModel):
+from schemas.user import GetUser
+class PostCreate(BaseModel):
     content: str
-    user_id: int
 
     class Config:
         orm_mode = True

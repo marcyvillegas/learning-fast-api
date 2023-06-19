@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 from db import Base
+from models.user import User
 
 class Post(Base):
     __tablename__ = 'posts'
