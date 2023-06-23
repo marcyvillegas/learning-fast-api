@@ -4,6 +4,7 @@ from sqlalchemy import update
 from models.user import User
 from schemas.user import UserCreate, UserLogIn, UserUpdate
 from db import sessionLocal, engine, Base
+from redis import asyncio as aioredis
 
 app = FastAPI()
 
@@ -14,6 +15,8 @@ user = APIRouter(
     tags=["user"]
 )
 
+redis = aioredis.from_url("redis://localhost")
+
 def get_db():
     db = sessionLocal()
     try:
@@ -21,13 +24,21 @@ def get_db():
     finally:
         db.close()
 
-def is_user_logged(request: Request):
-    logged_user = request.cookies.get("logged_user")
+async def is_user_logged():
+    logged_user = await redis.get("logged_user")
     if logged_user is None:
         raise HTTPException(status_code=400, detail="User is not logged in.")
 
-def create_cookie(response: Response, user: str):
-    response.set_cookie(key="logged_user", value=user)
+async def create_redis_key(user: str):
+    await redis.set("logged_user", user)
+
+# Trying redis
+@user.get("/trying-redis")
+async def create_cache():
+    await redis.set("my-key", "value")
+    value = await redis.get("my-key")
+    print(value)
+    return {"cache": value}
 
 # CREATE
 @user.post("/signup")
@@ -39,7 +50,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     return {"message": "User is created!"}
 
 @user.post("/login")
-def login_user(user: UserLogIn, response: Response, db: Session = Depends(get_db)):
+async def login_user(user: UserLogIn, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.email == user.email).first()
     if existing_user is None:
         raise HTTPException(status_code=400, detail="Email is not registered.")
@@ -48,7 +59,7 @@ def login_user(user: UserLogIn, response: Response, db: Session = Depends(get_db
     if validate_password is None:
         raise HTTPException(status_code=400, detail="Incorrect password.")
 
-    create_cookie(response, existing_user.id)
+    await create_redis_key(existing_user.id)
 
     return {"message": "Login successful!"}
 
@@ -59,8 +70,8 @@ def logout_user(response: Response):
 
 # READ ALL
 @user.get("/all-users")
-def get_all_users(request: Request, db: Session = Depends(get_db)):
-    is_user_logged(request)
+async def get_all_users(db: Session = Depends(get_db)):
+    await is_user_logged()
 
     users = db.query(User).all()
     return users
