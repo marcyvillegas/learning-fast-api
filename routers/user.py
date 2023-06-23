@@ -16,6 +16,7 @@ user = APIRouter(
 )
 
 redis = aioredis.from_url("redis://localhost")
+TTL = 20 # seconds expiration
 
 def get_db():
     db = sessionLocal()
@@ -24,13 +25,14 @@ def get_db():
     finally:
         db.close()
 
-async def is_user_logged():
+async def user_authentication():
     logged_user = await redis.get("logged_user")
     if logged_user is None:
         raise HTTPException(status_code=400, detail="User is not logged in.")
 
 async def create_redis_key(user: str):
     await redis.set("logged_user", user)
+    await redis.expire("logged_user", TTL)
 
 # Trying redis
 @user.get("/trying-redis")
@@ -64,22 +66,22 @@ async def login_user(user: UserLogIn, db: Session = Depends(get_db)):
     return {"message": "Login successful!"}
 
 @user.get("/logout")
-def logout_user(response: Response):
-    response.delete_cookie("logged_user")
+async def logout_user():
+    await redis.delete("logged_user")
     return {"message": "Log out successfully!"}
 
 # READ ALL
 @user.get("/all-users")
 async def get_all_users(db: Session = Depends(get_db)):
-    await is_user_logged()
+    await user_authentication()
 
     users = db.query(User).all()
     return users
 
 # READ ONE
 @user.get("/{user_id}")
-def get_user(user_id: int, request: Request, db: Session = Depends(get_db)):
-    is_user_logged(request)
+async def get_user(user_id: int, db: Session = Depends(get_db)):
+    await user_authentication()
 
     existing_user = db.query(User).filter(User.id == user_id).first()
     if existing_user is None:
@@ -88,8 +90,8 @@ def get_user(user_id: int, request: Request, db: Session = Depends(get_db)):
 
 # EDIT
 @user.put("/edit/{user_id}")
-def edit_user(user_id: int, user: UserUpdate, request: Request, db: Session = Depends(get_db)):
-    is_user_logged(request)
+async def edit_user(user_id: int, user: UserUpdate, db: Session = Depends(get_db)):
+    await user_authentication()
 
     existing_user = db.query(User).filter(User.id == user_id).first()
     if existing_user is None:
@@ -104,8 +106,8 @@ def edit_user(user_id: int, user: UserUpdate, request: Request, db: Session = De
 
 # DELETE
 @user.delete("/delete/{user_id}")
-def delete_user(user_id: int, request: Request, db: Session = Depends(get_db)):
-    is_user_logged(request)
+async def delete_user(user_id: int, db: Session = Depends(get_db)):
+    await user_authentication()
 
     existing_user = db.query(User).filter(User.id == user_id).first()
     if existing_user is None:
