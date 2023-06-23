@@ -3,3 +3,5 @@ pydantic==1.10.9
 python-dotenv==1.0.0
 redis==5.0.0b4
 SQLAlchemy==2.0.16
+uvicorn==0.22.0
+pymysql==1.0.3

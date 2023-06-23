@@ -4,7 +4,7 @@ from models.post import Post
 from models.user import User
 from schemas.post import PostCreate
 from db import engine, Base
-from routers.user import get_db, is_user_logged
+from routers.user import get_db, user_authentication
 
 app = FastAPI()
 
@@ -17,7 +17,7 @@ post = APIRouter(
 
 @post.get("/all")
 def get_all_posts(request: Request, db: Session = Depends(get_db)):
-    is_user_logged(request)
+    user_authentication(request)
 
     posts = db.query(Post).options(joinedload(Post.user)).all()
 
@@ -25,7 +25,7 @@ def get_all_posts(request: Request, db: Session = Depends(get_db)):
 
 @post.get("/user/{user_id}")
 def get_user_post(user_id: int, request: Request, db: Session = Depends(get_db)):
-    is_user_logged(request)
+    user_authentication(request)
 
     posts = db.query(Post).filter(Post.user_id == user_id).all()
     if not posts:
@@ -35,7 +35,7 @@ def get_user_post(user_id: int, request: Request, db: Session = Depends(get_db))
 
 @post.get("/{post_id}")
 def get_post(post_id: int, request: Request, db: Session = Depends(get_db)):
-    is_user_logged(request)
+    user_authentication(request)
 
     post = db.query(Post).filter(Post.id == post_id).options(joinedload(Post.user)).first()
     if not post:
