@@ -4,6 +4,7 @@ from sqlalchemy import update
 from models.user import User
 from schemas.user import UserCreate, UserLogIn, UserUpdate
 from db import sessionLocal, engine, Base
+from redis import asyncio as aioredis
 
 app = FastAPI()
 
@@ -28,6 +29,15 @@ def is_user_logged(request: Request):
 
 def create_cookie(response: Response, user: str):
     response.set_cookie(key="logged_user", value=user)
+
+# Trying redis
+@user.get("/trying-redis")
+async def create_cache():
+    redis = aioredis.from_url("redis://localhost")
+    await redis.set("my-key", "value")
+    value = await redis.get("my-key")
+    print(value)
+    return {"cache": value}
 
 # CREATE
 @user.post("/signup")

@@ -1,4 +1,3 @@
 This branch uses:
-- multiple files, file structure
-- MySQL database
-- SqlAlchemy
+
+- Redis for user authentication session and caching

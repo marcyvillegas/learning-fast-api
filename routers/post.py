@@ -1,5 +1,5 @@
 from fastapi import FastAPI, APIRouter, Depends, Request, HTTPException, Response
-from sqlalchemy.orm import Session, joinedload, defer
+from sqlalchemy.orm import Session, joinedload
 from models.post import Post
 from models.user import User
 from schemas.post import PostCreate
@@ -37,7 +37,7 @@ def get_user_post(user_id: int, request: Request, db: Session = Depends(get_db))
 def get_post(post_id: int, request: Request, db: Session = Depends(get_db)):
     is_user_logged(request)
 
-    post = db.query(Post).filter(Post.id == post_id).first()
+    post = db.query(Post).filter(Post.id == post_id).options(joinedload(Post.user)).first()
     if not post:
         raise HTTPException(status_code=404, detail="Posts not found.")
 
